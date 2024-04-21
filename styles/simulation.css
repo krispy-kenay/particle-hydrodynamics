@@ -75,17 +75,25 @@ Settings
     padding: 20px;
     top: 50%;
     left: 0;
-    transform: translate(-95%, -50%);
+    transform: translate(-90%, -50%);
     z-index: 99;
     border-radius: 0px 20px 20px 0px;
-    background-color: var(--background-color);
-    box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.2);
+    background-color: #cccccc;
+    box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.6);
     min-width: 300px;
     transition: all 0.2s;
+}
+.settings > div {
+    opacity: 0;
 }
 .settings:hover {
     display: flex;
     transform: translate(0%, -50%);
+    background-color: var(--background-color);
+    box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.2);
+}
+.settings:hover > div {
+    opacity: 1;
 }
 .settings > span {
     font-size: 30px;
