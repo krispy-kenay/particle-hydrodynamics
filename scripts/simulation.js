@@ -5,6 +5,10 @@
 // Initialize global variables for simulation parameters
 var gravity = 0;
 var numPoints = 0;
+var smoothingRadius = 0;
+var pressureMultiplier = 0;
+var targetDensity = 0;
+var mass = 0;
 
 // Initialize behind the scenes variables (ones that shouldn't be changed during)
 const timestep = 0.01
@@ -17,6 +21,7 @@ var positions_prev = [];
 var acceleration = [];
 var radiuses = [];
 var colors = [];
+var densities = [];
 
 // ----------------------------------------
 // Setup functions
@@ -30,11 +35,13 @@ function initializePositions() {
         positions_prev[i] = [positions[i][0] + getRandomFloat(-1,1), positions[i][1] + getRandomFloat(-1,1)];
         acceleration[i] = [0,0];
         colors[i] = "#1e1e1e";
+        radiuses[i] = 10;
+        densities[i] = 0;
     }
     for (let _ = 0; _ < 20; _++) {
         resolveCollisions(positions, positions_prev, radiuses);
     }
-    drawCoordinates(ctx, positions, radiuses, colors);
+    updatePositions(timestep, gravity, collisionDamping);
 }
 
 function changeNumParticles(newNum) {
@@ -46,10 +53,10 @@ function changeNumParticles(newNum) {
             positions[newLength] = [getRandomFloat(0, canvas.width), getRandomFloat(0, canvas.height)];
             positions_prev[newLength] = [positions[newLength][0] + getRandomFloat(-1,1), positions[newLength][1] + getRandomFloat(-1,1)];
             acceleration[newLength] = [0,0];
-            radiuses[newLength] = parseInt(getRandomFloat(10, 10));
             colors[newLength] = "#1e1e1e";
+            radiuses[newLength] = 10;
+            densities[newLength] = 0;
         }
-        drawCoordinates(ctx, positions, radiuses, colors);
     } else if (diff < 0) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (let _ = 0; _ < -diff; _++) {
@@ -58,9 +65,10 @@ function changeNumParticles(newNum) {
             let _3 = acceleration.pop();
             let _5 = radiuses.pop();
             let _6 = colors.pop();
+            let _7 = densities.pop();
         }
-        drawCoordinates(ctx, positions, radiuses, colors);
     }
+    updatePositions(timestep, gravity, collisionDamping);
     numPoints = newNum; 
 }
 
@@ -114,7 +122,12 @@ function updatePositions(dt, g, damping) {
         mouseRepulsion(mouseX, mouseY);
     }
 
-    applyGravity(acceleration, g);
+    if (targetDensity > 0) {
+        updateDensities(positions, densities, mass);
+        calculateForces(positions, positions_prev, acceleration, densities, smoothingRadius, targetDensity, pressureMultiplier);
+    }
+
+    applyGravity(acceleration, g, mass);
     for (let _ = 0; _ < 2; _++) {
         resolveCollisions(positions, positions_prev, radiuses);
     }
@@ -122,6 +135,9 @@ function updatePositions(dt, g, damping) {
     applyVelocity(positions, positions_prev, acceleration, dt);
 
     // Redraw points
+    if (targetDensity > 0) {
+        drawInfluence(ctx, positions, densities, targetDensity, smoothingRadius);
+    }
     drawCoordinates(ctx, positions, radiuses, colors);
     return;
 }
@@ -167,9 +183,9 @@ function mouseRepulsion(mx, my) {
 // ----------------------------------------
 
 // Function to add gravity to acceleration
-function applyGravity(acc, g) {
+function applyGravity(acc, g, mass) {
     for (let i = 0; i < acc.length; i++) {
-        acc[i][1] += g;
+        acc[i][1] += g * mass;
     }
 }
 // Function to recalculate position based on velocity and acceleration
@@ -242,12 +258,81 @@ function resolveCollisions(pos, ppos, radii) {
         }
     }
 }
+// Update all densities
+function updateDensities(pos, dens, mass) {
+    for (let i = 0; i < pos.length; i++) {
+        let density = 0;
+        for (let j = 0; j < pos.length; j++) {
+            let dst = calculateDistance(pos[i], pos[j]);
+            density += mass * densityKernel(dst);
+        }
+        dens[i] = density;
+    }
+}
+// Calculate all remaining forces
+function calculateForces(pos, ppos, acc, dens, sradius, targetdens, pmult) {
+    for (let i = 0; i < pos.length; i++) {
+        let pressureForce = [0,0];
+        for (let j = 0; j < pos.length; j++) {
+            if (i == j) {continue;}
+            let dst = calculateDistance(pos[i], pos[j]);
+            if (dst > sradius) {continue;}
+            let slope = densityKernelDerivative(dst);
+            let density = dens[j];
+            let pressure = calculateSharedPressure(density, dens[i], targetdens, pmult);
+            if (density * dst !== 0) {
+                let f = (slope * mass * pressure) / (density * dst);
+                pressureForce[0] += (pos[j][0] - pos[i][0]) * f;
+                pressureForce[1] += (pos[j][1] - pos[i][1]) * f;
+            }
+        }
+        let pressureAcceleration;
+        if (densities[i] !== 0) {
+            pressureAcceleration = pressureForce.map(element => element / densities[i]);
+        } else {
+            pressureAcceleration = [0,0];
+        }
+        acc[i][0] += (pressureAcceleration[0]);
+        acc[i][1] += (pressureAcceleration[1]);
+    }
+}
+
+// ----------------------------------------
+// Kernel functions
+// ----------------------------------------
+
+function smoothingKernel (dst) {
+    if (dst < smoothingRadius) {
+    let v = (Math.PI * smoothingRadius ** 4) / 6;
+    return (smoothingRadius - dst)**2 / v;
+    } else {return 0;}
+}
+function spikyKernel (dst) {
+    if (dst < smoothingRadius) {
+        let v = smoothingRadius - dst;
+        return v*v*6 / (Math.PI * smoothingRadius**4);
+    } else {return 0;}
+}
+function smoothingKernelDerivative(dst) {
+    if (dst >= smoothingRadius) {return 0;}
+    let scale = 12 / (Math.PI * smoothingRadius ** 4);
+    return (dst - smoothingRadius) * scale;
+}
+function spikyKernelDerivative (dst) {
+    if (dst < smoothingRadius) {let v = smoothingRadius - dst; return -v*12 / ((smoothingRadius ** 4) * Math.PI);} else {return 0;}}
+
+function densityKernel(dst) {
+    return spikyKernel(dst);
+}
+function densityKernelDerivative(dst) {
+    return spikyKernelDerivative(dst);
+}
 
 // ----------------------------------------
 // Draw functions
 // ----------------------------------------
 
-// Function to draw coordinates on the canvas
+// Draw coordinates on the canvas
 function drawCoordinates(canv, pos, radii, col) {
     for (let i = 0; i < pos.length; i++) {
         canv.fillStyle = col[i];
@@ -271,7 +356,29 @@ function drawMouse(canv, mx, my, iradius, col) {
     canv.arc(mx, my, iradius, 0, 2 * Math.PI);
     canv.fill();
 }
+// Draw Smoothing Radius on the canvas
+function drawInfluence(canv, pos, dens, targetdens, sradius) {
+    for (let i = 0; i < pos.length; i++) {
+        const gradient = ctx.createRadialGradient(
+            pos[i][0], pos[i][1], 2,
+            pos[i][0], pos[i][1], smoothingRadius
+        );
+        if (dens[i] <= targetdens) {
+            col = `rgba(19,3,252,${(1-(dens[i]/targetdens))})`;
+        } else if (dens[i] > targetdens) {
+            col = `rgba(156,0,8,${(1-(targetdens/dens[i]))})`;
+        } else {
+            col = `rgba(255,255,255,0)`;
+        }
+        gradient.addColorStop(0, col);
+        gradient.addColorStop(1, `rgba(255,255,255,0)`);
 
+        canv.fillStyle = gradient;
+        canv.beginPath();
+        canv.arc(pos[i][0], pos[i][1], sradius, 0, 2 * Math.PI);
+        canv.fill();
+    }
+}
 
 // ----------------------------------------
 // Helper functions
@@ -280,4 +387,16 @@ function drawMouse(canv, mx, my, iradius, col) {
 // Function to get a random number in the interval [min, max)
 function getRandomFloat(min, max) {
     return Math.random() * (max - min) + min;
+}
+
+// Function to calculate distance between two points
+function calculateDistance (p1, p2) {
+    return Math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2);
+}
+
+// Calculate pressure between two points
+function calculateSharedPressure (densityA, densityB, targetdens, pmult) {
+    let pressureA = (densityA - targetdens) * pmult;
+    let pressureB = (densityB - targetdens) * pmult;
+    return (pressureA + pressureB) / 2;
 }

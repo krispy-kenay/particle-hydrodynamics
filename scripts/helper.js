@@ -23,7 +23,27 @@ function setNumParticles(slider) {
 // Adjust Gravity 
 function setGravity(slider) {
     gravity = slider.value * 10;
-    setSpanPos(slider, slider.nextElementSibling, gravity);
+    setSpanPos(slider, slider.nextElementSibling, gravity / (10*200));
+}
+// Adjust mass
+function setMass(slider) {
+    mass = slider.value;
+    setSpanPos(slider, slider.nextElementSibling, mass / (200));
+}
+// Adjust Smoothing Radius
+function setSmoothingRadius(slider) {
+    smoothingRadius = slider.value;
+    setSpanPos(slider, slider.nextElementSibling, smoothingRadius);
+}
+// Adjust Target Density
+function setTargetDensity(slider) {
+    targetDensity = slider.value / 1000;
+    setSpanPos(slider, slider.nextElementSibling, targetDensity * (1000/200));
+}
+// Adjust Pressure Multiplier
+function setPressureMultiplier(slider) {
+    pressureMultiplier = slider.value * (1/timestep**2);
+    setSpanPos(slider, slider.nextElementSibling, pressureMultiplier * (timestep**2/200));
 }
 
 

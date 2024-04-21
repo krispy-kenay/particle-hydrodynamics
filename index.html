@@ -25,6 +25,26 @@
                 <div class="slider"><input type="range" min="0" max="200" value="0" id="" oninput="setGravity(this)"><span></span></div>
                 <p>Strength of gravitational acceleration</p>
             </div>
+            <div class="option">
+                <h3>Particle Mass</h3>
+                <div class="slider"><input type="range" min="0" max="200" value="100" id="" oninput="setMass(this)"><span></span></div>
+                <p>Set the mass of each particle</p>
+            </div>
+            <div class="option">
+                <h3>Interaction Radius</h3>
+                <div class="slider"><input type="range" min="0" max="200" value="50" id="" oninput="setSmoothingRadius(this)"><span></span></div>
+                <p>Range in which the Particles can Interact</p>
+            </div>
+            <div class="option">
+                <h3>Target Density</h3>
+                <div class="slider"><input type="range" min="0" max="200" value="100" id="" oninput="setTargetDensity(this)"><span></span></div>
+                <p>Desired density</p>
+            </div>
+            <div class="option">
+                <h3>Pressure Multiplier</h3>
+                <div class="slider"><input type="range" min="0" max="200" value="10" id="" oninput="setPressureMultiplier(this)"><span></span></div>
+                <p>How much force the particles will experience to bring them to the desired density</p>
+            </div>
         </div>
         <!-- Canvas element containing the simulation -->
         <div class="simbox">
