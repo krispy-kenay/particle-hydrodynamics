@@ -1,9 +1,39 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <!-- Styles -->
         <link rel="stylesheet" href="styles/theme.css">
+        <link rel="stylesheet" href="styles/simulation.css">
     </head>
     <body>
+        <!-- Simulation controls-->
+        <div class="controls">
+            <div class="player" id="playButton" onclick="togglePlay()"></div>
+            <div id="resetButton" onclick="initializePositions()">Reset</div>
+            
+        </div>
+        <!-- Settings panel -->
+        <div class="settings">
+            <span>Settings</span>
+            <div class="option">
+                <h3>Number of Particles</h3>
+                <div class="slider"><input type="range" min="0" max="5000" value="200" id="" oninput="setNumParticles(this)"><span></span></div>
+                <p>How many particles should be in the simulation. Warning: has a very big performance impact, highest recommendation on normal hardware is ~1000</p>
+            </div>
+            <div class="option">
+                <h3>Gravity</h3>
+                <div class="slider"><input type="range" min="0" max="200" value="0" id="" oninput="setGravity(this)"><span></span></div>
+                <p>Strength of gravitational acceleration</p>
+            </div>
+        </div>
+        <!-- Canvas element containing the simulation -->
+        <div class="simbox">
+            <canvas id="Sim2Dbox">
+                Your browser does not support the HTML5 canvas tag.
+            </canvas>
+        </div>
+        <!-- Scripts -->
+        <script type="text/javascript" src="scripts/simulation.js"></script>
         <script type="text/javascript" src="scripts/helper.js"></script>
     </body>
 </html>
