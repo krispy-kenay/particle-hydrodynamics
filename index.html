@@ -17,7 +17,7 @@
             <span>Settings</span>
             <div class="option">
                 <h3>Number of Particles</h3>
-                <div class="slider"><input type="range" min="0" max="5000" value="200" id="" oninput="setNumParticles(this)"><span></span></div>
+                <div class="slider"><input type="range" min="0" max="3000" value="200" id="" oninput="setNumParticles(this)"><span></span></div>
                 <p>How many particles should be in the simulation. Warning: has a very big performance impact, highest recommendation on normal hardware is ~1000</p>
             </div>
             <div class="option">
@@ -44,6 +44,11 @@
                 <h3>Pressure Multiplier</h3>
                 <div class="slider"><input type="range" min="0" max="200" value="10" id="" oninput="setPressureMultiplier(this)"><span></span></div>
                 <p>How much force the particles will experience to bring them to the desired density</p>
+            </div>
+            <div class="option">
+                <h3>Viscosity</h3>
+                <div class="slider"><input type="range" min="0" max="200" value="0" id="" oninput="setViscosityStrength(this)"><span></span></div>
+                <p>Internal force friction coefficient</p>
             </div>
         </div>
         <!-- Canvas element containing the simulation -->

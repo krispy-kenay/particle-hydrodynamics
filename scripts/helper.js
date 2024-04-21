@@ -45,6 +45,11 @@ function setPressureMultiplier(slider) {
     pressureMultiplier = slider.value * (1/timestep**2);
     setSpanPos(slider, slider.nextElementSibling, pressureMultiplier * (timestep**2/200));
 }
+// Adjust Viscosity
+function setViscosityStrength(slider) {
+    viscosityStrength = slider.value * (1/timestep**2) * mass**2;
+    setSpanPos(slider, slider.nextElementSibling, viscosityStrength * (timestep**2/200)/(mass**2 ));
+}
 
 
 
@@ -115,6 +120,6 @@ canvas.addEventListener('wheel', e => {
 // Helper function to set position of the number above the sliders
 function setSpanPos(slider, span, value) {
     let sliderPosition = slider.value / slider.max;
-    span.innerHTML = value;
+    span.innerHTML = parseFloat(value).toFixed(2);
     span.style.left = ((sliderPosition * 100) - (sliderPosition - 0.5)*6) + '%';
 }

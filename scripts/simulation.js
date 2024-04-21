@@ -273,11 +273,13 @@ function updateDensities(pos, dens, mass) {
 function calculateForces(pos, ppos, acc, dens, sradius, targetdens, pmult) {
     for (let i = 0; i < pos.length; i++) {
         let pressureForce = [0,0];
+        let viscosityForce = [0,0];
         for (let j = 0; j < pos.length; j++) {
             if (i == j) {continue;}
             let dst = calculateDistance(pos[i], pos[j]);
             if (dst > sradius) {continue;}
             let slope = densityKernelDerivative(dst);
+            let influence = viscosityKernelDerivative(dst);
             let density = dens[j];
             let pressure = calculateSharedPressure(density, dens[i], targetdens, pmult);
             if (density * dst !== 0) {
@@ -285,15 +287,18 @@ function calculateForces(pos, ppos, acc, dens, sradius, targetdens, pmult) {
                 pressureForce[0] += (pos[j][0] - pos[i][0]) * f;
                 pressureForce[1] += (pos[j][1] - pos[i][1]) * f;
             }
+            viscosityForce[0] += ((pos[j][0] - ppos[j][0]) - (pos[i][0] - ppos[i][0])) * -influence;
+            viscosityForce[1] += ((pos[j][1] - ppos[j][1]) - (pos[i][1] - ppos[i][1])) * -influence;
         }
+        let viscosityOutput = viscosityForce.map(element => element * viscosityStrength);
         let pressureAcceleration;
         if (densities[i] !== 0) {
             pressureAcceleration = pressureForce.map(element => element / densities[i]);
         } else {
             pressureAcceleration = [0,0];
         }
-        acc[i][0] += (pressureAcceleration[0]);
-        acc[i][1] += (pressureAcceleration[1]);
+        acc[i][0] += (pressureAcceleration[0]+viscosityOutput[0]/mass);
+        acc[i][1] += (pressureAcceleration[1]+viscosityOutput[1]/mass);
     }
 }
 
@@ -326,6 +331,9 @@ function densityKernel(dst) {
 }
 function densityKernelDerivative(dst) {
     return spikyKernelDerivative(dst);
+}
+function viscosityKernelDerivative(dst) {
+    return smoothingKernelDerivative(dst);
 }
 
 // ----------------------------------------
