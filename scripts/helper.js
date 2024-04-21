@@ -45,6 +45,7 @@ window.onload = function() {
     initializePositions();
 };
 
+// Trigger canvas resize when the window is resized
 window.onresize = function() {
     var inputs = document.getElementsByTagName('input');
     for (var i = 0; i < inputs.length; i++) {
@@ -55,6 +56,41 @@ window.onresize = function() {
     }
     init_canvas();
 }
+
+// Global mouse related variables
+var mouseX, mouseY;
+var leftclick = false;
+var rightclick = false;
+var range = 0;
+var mouseDist = 200;
+var mouseForce = 4000;
+
+// Mouse event listeners
+canvas.addEventListener('mousemove', e => {
+    mouseX = e.clientX - canvas.getBoundingClientRect().left;
+    mouseY = e.clientY - canvas.getBoundingClientRect().top;
+});
+canvas.addEventListener('mousedown', e => {
+if (e.button === 0) {
+    leftclick = true;
+} else if (e.button === 2) {
+    rightclick = true;
+}});
+canvas.addEventListener('mouseup', e => {
+if (e.button === 0) {
+    leftclick = false;
+} else if (e.button === 2) {
+    rightclick = false;
+}});
+canvas.addEventListener('contextmenu', e => {
+    e.preventDefault();
+});
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = Math.sign(e.deltaY);
+    mouseDist += delta * 10;
+    if (mouseDist < 0) mouseDist = 0;
+});
 
 // Helper function to set position of the number above the sliders
 function setSpanPos(slider, span, value) {

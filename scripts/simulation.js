@@ -107,6 +107,13 @@ function togglePlay() {
 function updatePositions(dt, g, damping) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    if (leftclick == true) {
+        mouseAttraction(mouseX, mouseY);
+    }
+    else if (rightclick == true) {
+        mouseRepulsion(mouseX, mouseY);
+    }
+
     applyGravity(acceleration, g);
     for (let _ = 0; _ < 2; _++) {
         resolveCollisions(positions, positions_prev, radiuses);
@@ -117,6 +124,41 @@ function updatePositions(dt, g, damping) {
     // Redraw points
     drawCoordinates(ctx, positions, radiuses, colors);
     return;
+}
+
+// ----------------------------------------
+// Mouse Interaction Functions
+// ----------------------------------------
+
+function mouseAttraction(mx, my) {
+    for (let i = 0; i < positions.length; i++) {
+        let dx = positions[i][0] - mx;
+        let dy = positions[i][1] - my;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < mouseDist) {
+            let nx = dx / distance;
+            let ny = dy / distance;
+            acceleration[i][0] *= 0.9;
+            acceleration[i][1] *= 0.9;
+            acceleration[i][0] -= nx * mouseForce; //Math.max(0.5, distance/mouseDist)
+            acceleration[i][1] -= ny * mouseForce;
+        }
+    }
+    drawMouse(ctx, mx, my, mouseDist, [19,3,252]);
+}
+function mouseRepulsion(mx, my) {
+    for (let i = 0; i < positions.length; i++) {
+        let dx = positions[i][0] - mx;
+        let dy = positions[i][1] - my;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < mouseDist) {
+            let nx = dx / distance;
+            let ny = dy / distance;
+            acceleration[i][0] += nx * mouseForce;
+            acceleration[i][1] += ny * mouseForce;
+        }
+    }
+    drawMouse(ctx, mx, my, mouseDist, [156,0,8]);
 }
 
 
@@ -214,6 +256,20 @@ function drawCoordinates(canv, pos, radii, col) {
         canv.fill();
         canv.stroke();
     }
+}
+// Draw circle around mouse
+function drawMouse(canv, mx, my, iradius, col) {
+    const gradient = ctx.createRadialGradient(
+        mx, my, 2,
+        mx, my, iradius
+    );
+    gradient.addColorStop(0, `rgba(${col[0]},${col[1]},${col[2]},0.8)`); 
+    gradient.addColorStop(1, `rgba(${col[0]},${col[1]},${col[2]},0.1)`); 
+
+    canv.fillStyle = gradient;
+    canv.beginPath();
+    canv.arc(mx, my, iradius, 0, 2 * Math.PI);
+    canv.fill();
 }
 
 
