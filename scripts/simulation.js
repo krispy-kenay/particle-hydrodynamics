@@ -25,6 +25,10 @@ var radiuses = [];
 var colors = [];
 var densities = [];
 
+// Initialize state variables
+var displaySmoothingRadius = false;
+var displayVelocity = true;
+
 // Color map
 const velocityColor = ['#2736b9','#0043c3','#0056ae','#0060a5','#0067a3','#006ea4','#0075a6','#007ba9','#0082ac','#0089af','#0090b2','#0097b4','#009eb6','#00a6b7','#00aeb8','#00b6b7','#00beb5','#00c7b2','#00cead','#1cd4a9','#1cd4a9','#35da9f','#4ddf93','#64e486','#7be878','#92ec6a','#abef5b','#c4f14d','#def140','#f8f135','#f8f135','#f8e92f','#f8e129','#f8d924','#f7d11f','#f6c91b','#f5c117','#f4b914','#f2b212','#f0aa11','#eea211','#ec9a11','#ea9212','#e78b13','#e48315'];
 
@@ -131,7 +135,7 @@ function updatePositions(dt, g, damping) {
     applyVelocity(positions, positions_prev, acceleration, dt);
 
     // Redraw points
-    if (targetDensity > 0) {drawInfluence(ctx, positions, densities, targetDensity, smoothingRadius);}
+    if (displaySmoothingRadius) {drawInfluence(ctx, positions, densities, targetDensity, smoothingRadius);}
     drawCoordinates(ctx, positions, positions_prev, radiuses);
     return;
 }
@@ -337,11 +341,17 @@ function viscosityKernelDerivative(dst) {
 // Draw coordinates on the canvas
 function drawCoordinates(canv, pos, ppos, radii) {
     for (let i = 0; i < pos.length; i++) {
-        let velocity = 0;
-        for (let k = 0; k < pos[i].length; k++) {
-            velocity += Math.abs(pos[i][k] - ppos[i][k]);
+        let color;
+        if (displayVelocity) {
+            let velocity = 0;
+            for (let k = 0; k < pos[i].length; k++) {
+                velocity += Math.abs(pos[i][k] - ppos[i][k]);
+            }
+            color = velocityColor[parseInt(45*velocity / (max_speed * 2))];
+        } else {
+            color = "#1e1e1e";
         }
-        let color = velocityColor[parseInt(45*velocity / (max_speed * 2))];
+        
         canv.fillStyle = color;
         canv.beginPath();
         canv.arc(pos[i][0], pos[i][1], radii[i], 0, 2 * Math.PI);

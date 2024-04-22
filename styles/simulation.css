@@ -29,8 +29,6 @@ Simulation Controls
     background-color: var(--background-color);
     padding: 20px;
     border-radius: 0px 0px 15px 15px;
-    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3);
-    box-shadow: 10px 10px 20px #ffffff, -10px -10px 20px #cccccc;
     box-shadow: inset 5px -5px 10px #cccccc, inset -5px 5px 10px #ffffff;
 }
 
@@ -95,9 +93,13 @@ Settings
 .settings:hover > div {
     opacity: 1;
 }
-.settings > span {
+.settings > h1 {
     font-size: 30px;
     font-weight: 800;
+}
+.settings > h2 {
+    font-size: 24px;
+    font-weight: 500;
 }
 
 /*
@@ -105,6 +107,7 @@ Settings
 Options
 ----------------------------------------
 */
+.toggle,
 .option {
     display: grid;
     column-gap: 10px;
@@ -112,17 +115,20 @@ Options
     width: 400px;
     align-items: center;
 }
+.toggle > h3,
 .option > h3 {
     font-size: large;
     font-weight: 500;
     margin: 0;
 }
+.toggle > p,
 .option > p {
     font-size: medium;
     font-weight: 300;
     color: dimgray;
     grid-column: span 2;
 }
+
 .option > div {
     position: relative;
     display: grid;
@@ -131,6 +137,9 @@ Options
     --thumb-width: 12px;
 }
 
+/*
+Slider formatting
+*/
 .option > div > input {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -187,4 +196,51 @@ Options
     top: -36px;
     transform: scale(1,1) translateX(-50%);
     z-index: 90;
+}
+
+/*
+Checkbox formatting
+*/
+.chkbox {
+    display: inline-block;
+}
+.chkbox > label {
+    display: inline-block;
+    height: 24px;
+    width: 60px;
+    position: relative;
+}
+.chkbox > label > input[type="checkbox"] {
+    display: none;
+}
+.chkbox > label > div {
+    background-color: #fff;
+    bottom: 0;
+    cursor: pointer;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    transition: .4s;
+    border-radius: 20px;
+    box-shadow: inset 4px -4px 10px #cccccc, inset -4px 4px 10px #ffffff;
+}
+.chkbox > label > div::before {
+    background-color: var(--primary-color);
+    bottom: 4px;
+    content: "";
+    height: 16px;
+    left: 4px;
+    position: absolute;
+    transition: .4s;
+    width: 16px;
+    border-radius: 50%;
+}
+.chkbox > label > input[type="checkbox"]:checked + div {
+    background-color: var(--primary-color-translucent);
+    box-shadow: none;
+}
+.chkbox > label > input[type="checkbox"]:checked + div::before {
+    background-color: var(--primary-color-hover);
+    transform: translateX(36px);
 }
