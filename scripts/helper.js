@@ -22,13 +22,15 @@ function setNumParticles(slider) {
 }
 // Adjust Gravity 
 function setGravity(slider) {
-    gravity = slider.value * 10;
+    gravity = slider.value;
     setSpanPos(slider, slider.nextElementSibling, gravity / (10*200));
 }
 // Adjust mass
 function setMass(slider) {
     mass = slider.value;
+    particleRadius = slider.value / 10;
     setSpanPos(slider, slider.nextElementSibling, mass / (200));
+    changeNumParticles(numPoints);
 }
 // Adjust Smoothing Radius
 function setSmoothingRadius(slider) {
