@@ -7,6 +7,7 @@ var gravity = 0;
 var numPoints = 0;
 var smoothingRadius = 0;
 var pressureMultiplier = 0;
+var viscosityStrength = 0;
 var targetDensity = 0;
 var mass = 0;
 var particleRadius = 0;
@@ -31,23 +32,7 @@ const velocityColor = ['#2736b9','#0043c3','#0056ae','#0060a5','#0067a3','#006ea
 // Setup functions
 // ----------------------------------------
 
-// Initialize Positions at the beginning
-function initializePositions() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < numPoints; i++) {
-        positions[i] = [getRandomFloat(0, canvas.width), getRandomFloat(0, canvas.height)];
-        positions_prev[i] = [positions[i][0] + getRandomFloat(-1,1), positions[i][1] + getRandomFloat(-1,1)];
-        acceleration[i] = [0,0];
-        colors[i] = "#1e1e1e";
-        radiuses[i] = particleRadius;
-        densities[i] = 0;
-    }
-    for (let _ = 0; _ < 20; _++) {
-        resolveCollisions(positions, positions_prev, radiuses);
-    }
-    updatePositions(timestep, gravity, collisionDamping);
-}
-
+// Function to change the number of particles without removing existing ones, used both to setup the simulation and update it on the-fly
 function changeNumParticles(newNum) {
     let diff = newNum - numPoints;
     if (diff > 0) {
@@ -60,6 +45,8 @@ function changeNumParticles(newNum) {
             colors[newLength] = "#1e1e1e";
             radiuses[newLength] = particleRadius;
             densities[newLength] = 0;
+            numPoints = newNum; 
+            updatePositions(timestep, gravity, collisionDamping);
         }
     } else if (diff < 0) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -70,13 +57,22 @@ function changeNumParticles(newNum) {
             let _5 = radiuses.pop();
             let _6 = colors.pop();
             let _7 = densities.pop();
+            numPoints = newNum;
+            updatePositions(timestep, gravity, collisionDamping);
         }
+    } else {return;}
+}
+
+// Function to change the radius of all the particles
+function changeRadius(newRadius) {
+    if (newRadius !== particleRadius) {
+        particleRadius = newRadius;
+        for (let i = 0; i < positions.length; i++) {
+            radiuses[i] = particleRadius;
+        }
+        updatePositions(timestep, gravity, collisionDamping);
     }
-    for (let i = 0; i < positions.length; i++) {
-        radiuses[i] = particleRadius;
-    }
-    updatePositions(timestep, gravity, collisionDamping);
-    numPoints = newNum; 
+    
 }
 
 // ----------------------------------------
@@ -122,29 +118,20 @@ function togglePlay() {
 function updatePositions(dt, g, damping) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (leftclick == true) {
-        mouseAttraction(mouseX, mouseY);
-    }
-    else if (rightclick == true) {
-        mouseRepulsion(mouseX, mouseY);
-    }
+    if (leftclick == true) {mouseAttraction(mouseX, mouseY);}
+    else if (rightclick == true) {mouseRepulsion(mouseX, mouseY);}
 
-    if (targetDensity > 0) {
-        updateDensities(positions, densities, mass);
-        calculateForces(positions, positions_prev, acceleration, densities, smoothingRadius, targetDensity, pressureMultiplier);
-    }
+    if (targetDensity > 0) {updateDensities(positions, densities, mass);}
+    if (pressureMultiplier > 0) {calculateForces(positions, positions_prev, acceleration, densities, smoothingRadius, targetDensity, pressureMultiplier);}
+    if (gravity > 0) {applyGravity(acceleration, g, mass);}
+    
+    for (let _ = 0; _ < 2; _++) {resolveCollisions(positions, positions_prev, radiuses);}
 
-    applyGravity(acceleration, g, mass);
-    for (let _ = 0; _ < 2; _++) {
-        resolveCollisions(positions, positions_prev, radiuses);
-    }
     boundBoxCheck(positions, positions_prev, canvas.width, canvas.height, damping);
     applyVelocity(positions, positions_prev, acceleration, dt);
 
     // Redraw points
-    if (targetDensity > 0) {
-        drawInfluence(ctx, positions, densities, targetDensity, smoothingRadius);
-    }
+    if (targetDensity > 0) {drawInfluence(ctx, positions, densities, targetDensity, smoothingRadius);}
     drawCoordinates(ctx, positions, positions_prev, radiuses);
     return;
 }
@@ -349,7 +336,6 @@ function viscosityKernelDerivative(dst) {
 
 // Draw coordinates on the canvas
 function drawCoordinates(canv, pos, ppos, radii) {
-    console.log("here")
     for (let i = 0; i < pos.length; i++) {
         let velocity = 0;
         for (let k = 0; k < pos[i].length; k++) {

@@ -27,10 +27,12 @@ function setGravity(slider) {
 }
 // Adjust mass
 function setMass(slider) {
-    mass = slider.value;
-    particleRadius = slider.value / 10;
+    let val;
+    if (slider.value == 0) {val = 0.05;}
+    else {val = slider.value}
+    mass = val;
     setSpanPos(slider, slider.nextElementSibling, mass / (200));
-    changeNumParticles(numPoints);
+    changeRadius(val / 10);
 }
 // Adjust Smoothing Radius
 function setSmoothingRadius(slider) {
@@ -61,6 +63,7 @@ function setViscosityStrength(slider) {
 
 // Trigger general setup once the window has loaded in properly
 window.onload = function() {
+    init_canvas();
     var inputs = document.getElementsByTagName('input');
     for (var i = 0; i < inputs.length; i++) {
         var input = inputs[i];
@@ -68,8 +71,8 @@ window.onload = function() {
             input.oninput();
         }
     }
-    init_canvas();
-    initializePositions();
+    
+    //initializePositions();
 };
 
 // Trigger canvas resize when the window is resized
