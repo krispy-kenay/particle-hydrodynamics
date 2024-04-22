@@ -23,7 +23,7 @@ function setNumParticles(slider) {
 // Adjust Gravity 
 function setGravity(slider) {
     gravity = slider.value;
-    setSpanPos(slider, slider.nextElementSibling, gravity / (10*200));
+    setSpanPos(slider, slider.nextElementSibling, gravity / (200));
 }
 // Adjust mass
 function setMass(slider) {
@@ -38,6 +38,9 @@ function setMass(slider) {
 function setSmoothingRadius(slider) {
     smoothingRadius = slider.value;
     setSpanPos(slider, slider.nextElementSibling, smoothingRadius);
+}
+function showSmoothingRadius(chkbox) {
+    displaySmoothingRadius = chkbox.checked;
 }
 // Adjust Target Density
 function setTargetDensity(slider) {
@@ -54,7 +57,10 @@ function setViscosityStrength(slider) {
     viscosityStrength = slider.value * (1/timestep**2) * mass**2;
     setSpanPos(slider, slider.nextElementSibling, viscosityStrength * (timestep**2/200)/(mass**2 ));
 }
-
+// Show Velocity as color
+function showVelocity(chkbox) {
+    displayVelocity = chkbox.checked;
+}
 
 
 // ----------------------------------------
