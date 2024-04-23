@@ -7,8 +7,10 @@ var gravity = 0;
 var numPoints = 0;
 var smoothingRadius = 0;
 var pressureMultiplier = 0;
+var viscosityStrength = 0;
 var targetDensity = 0;
 var mass = 0;
+var particleRadius = 0;
 
 // Initialize behind the scenes variables (ones that shouldn't be changed during)
 const timestep = 0.01
@@ -23,27 +25,18 @@ var radiuses = [];
 var colors = [];
 var densities = [];
 
+// Initialize state variables
+var displaySmoothingRadius = false;
+var displayVelocity = true;
+
+// Color map
+const velocityColor = ['#2736b9','#0043c3','#0056ae','#0060a5','#0067a3','#006ea4','#0075a6','#007ba9','#0082ac','#0089af','#0090b2','#0097b4','#009eb6','#00a6b7','#00aeb8','#00b6b7','#00beb5','#00c7b2','#00cead','#1cd4a9','#1cd4a9','#35da9f','#4ddf93','#64e486','#7be878','#92ec6a','#abef5b','#c4f14d','#def140','#f8f135','#f8f135','#f8e92f','#f8e129','#f8d924','#f7d11f','#f6c91b','#f5c117','#f4b914','#f2b212','#f0aa11','#eea211','#ec9a11','#ea9212','#e78b13','#e48315'];
+
 // ----------------------------------------
 // Setup functions
 // ----------------------------------------
 
-// Initialize Positions at the beginning
-function initializePositions() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for (let i = 0; i < numPoints; i++) {
-        positions[i] = [getRandomFloat(0, canvas.width), getRandomFloat(0, canvas.height)];
-        positions_prev[i] = [positions[i][0] + getRandomFloat(-1,1), positions[i][1] + getRandomFloat(-1,1)];
-        acceleration[i] = [0,0];
-        colors[i] = "#1e1e1e";
-        radiuses[i] = 10;
-        densities[i] = 0;
-    }
-    for (let _ = 0; _ < 20; _++) {
-        resolveCollisions(positions, positions_prev, radiuses);
-    }
-    updatePositions(timestep, gravity, collisionDamping);
-}
-
+// Function to change the number of particles without removing existing ones, used both to setup the simulation and update it on the-fly
 function changeNumParticles(newNum) {
     let diff = newNum - numPoints;
     if (diff > 0) {
@@ -54,8 +47,10 @@ function changeNumParticles(newNum) {
             positions_prev[newLength] = [positions[newLength][0] + getRandomFloat(-1,1), positions[newLength][1] + getRandomFloat(-1,1)];
             acceleration[newLength] = [0,0];
             colors[newLength] = "#1e1e1e";
-            radiuses[newLength] = 10;
+            radiuses[newLength] = particleRadius;
             densities[newLength] = 0;
+            numPoints = newNum; 
+            updatePositions(timestep, gravity, collisionDamping);
         }
     } else if (diff < 0) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -66,10 +61,22 @@ function changeNumParticles(newNum) {
             let _5 = radiuses.pop();
             let _6 = colors.pop();
             let _7 = densities.pop();
+            numPoints = newNum;
+            updatePositions(timestep, gravity, collisionDamping);
         }
+    } else {return;}
+}
+
+// Function to change the radius of all the particles
+function changeRadius(newRadius) {
+    if (newRadius !== particleRadius) {
+        particleRadius = newRadius;
+        for (let i = 0; i < positions.length; i++) {
+            radiuses[i] = particleRadius;
+        }
+        updatePositions(timestep, gravity, collisionDamping);
     }
-    updatePositions(timestep, gravity, collisionDamping);
-    numPoints = newNum; 
+    
 }
 
 // ----------------------------------------
@@ -115,30 +122,21 @@ function togglePlay() {
 function updatePositions(dt, g, damping) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (leftclick == true) {
-        mouseAttraction(mouseX, mouseY);
-    }
-    else if (rightclick == true) {
-        mouseRepulsion(mouseX, mouseY);
-    }
+    if (leftclick == true) {mouseAttraction(mouseX, mouseY);}
+    else if (rightclick == true) {mouseRepulsion(mouseX, mouseY);}
 
-    if (targetDensity > 0) {
-        updateDensities(positions, densities, mass);
-        calculateForces(positions, positions_prev, acceleration, densities, smoothingRadius, targetDensity, pressureMultiplier);
-    }
+    if (targetDensity > 0) {updateDensities(positions, densities, mass);}
+    if (pressureMultiplier > 0) {calculateForces(positions, positions_prev, acceleration, densities, smoothingRadius, targetDensity, pressureMultiplier);}
+    if (gravity > 0) {applyGravity(acceleration, g, mass);}
+    
+    for (let _ = 0; _ < 2; _++) {resolveCollisions(positions, positions_prev, radiuses);}
 
-    applyGravity(acceleration, g, mass);
-    for (let _ = 0; _ < 2; _++) {
-        resolveCollisions(positions, positions_prev, radiuses);
-    }
     boundBoxCheck(positions, positions_prev, canvas.width, canvas.height, damping);
     applyVelocity(positions, positions_prev, acceleration, dt);
 
     // Redraw points
-    if (targetDensity > 0) {
-        drawInfluence(ctx, positions, densities, targetDensity, smoothingRadius);
-    }
-    drawCoordinates(ctx, positions, radiuses, colors);
+    if (displaySmoothingRadius) {drawInfluence(ctx, positions, densities, targetDensity, smoothingRadius);}
+    drawCoordinates(ctx, positions, positions_prev, radiuses);
     return;
 }
 
@@ -341,9 +339,20 @@ function viscosityKernelDerivative(dst) {
 // ----------------------------------------
 
 // Draw coordinates on the canvas
-function drawCoordinates(canv, pos, radii, col) {
+function drawCoordinates(canv, pos, ppos, radii) {
     for (let i = 0; i < pos.length; i++) {
-        canv.fillStyle = col[i];
+        let color;
+        if (displayVelocity) {
+            let velocity = 0;
+            for (let k = 0; k < pos[i].length; k++) {
+                velocity += Math.abs(pos[i][k] - ppos[i][k]);
+            }
+            color = velocityColor[parseInt(45*velocity / (max_speed * 2))];
+        } else {
+            color = "#1e1e1e";
+        }
+        
+        canv.fillStyle = color;
         canv.beginPath();
         canv.arc(pos[i][0], pos[i][1], radii[i], 0, 2 * Math.PI);
         canv.fill();

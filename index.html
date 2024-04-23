@@ -14,21 +14,23 @@
         </div>
         <!-- Settings panel -->
         <div class="settings">
-            <span>Settings</span>
+            <h1>Settings</h1>
+            <hr/>
+            <h2>Parameters</h2>
             <div class="option">
                 <h3>Number of Particles</h3>
                 <div class="slider"><input type="range" min="0" max="3000" value="200" id="" oninput="setNumParticles(this)"><span></span></div>
-                <p>How many particles should be in the simulation. Warning: has a very big performance impact, highest recommendation on normal hardware is ~1000</p>
+                <p>Warning: has a very big performance impact, highest recommendation on normal hardware is ~1000</p>
             </div>
             <div class="option">
                 <h3>Gravity</h3>
                 <div class="slider"><input type="range" min="0" max="200" value="0" id="" oninput="setGravity(this)"><span></span></div>
-                <p>Strength of gravitational acceleration</p>
+                <!--<p>Strength of gravitational acceleration</p>-->
             </div>
             <div class="option">
                 <h3>Particle Mass</h3>
                 <div class="slider"><input type="range" min="0" max="200" value="100" id="" oninput="setMass(this)"><span></span></div>
-                <p>Set the mass of each particle</p>
+                <!--<p>Set the mass of each particle</p>-->
             </div>
             <div class="option">
                 <h3>Interaction Radius</h3>
@@ -49,6 +51,29 @@
                 <h3>Viscosity</h3>
                 <div class="slider"><input type="range" min="0" max="200" value="0" id="" oninput="setViscosityStrength(this)"><span></span></div>
                 <p>Internal force friction coefficient</p>
+            </div>
+            <hr/>
+            <h2>Visualization</h2>
+            <div class="toggle">
+                <h3>Show Velocity</h3>
+                <div class="chkbox">
+                    <label for="velocity">
+                        <input type="checkbox" id="velocity" onchange="showVelocity(this)" checked="checked"/>
+                        <div></div>
+                    </label>
+                </div>
+                <p><span style="color: #2736b9;">&#9632;</span><span style="color: #1cd4a9;">&#9632;</span><span style="color: #f8f135;">&#9632;</span><span style="color: #e48315;">&#9632;</span> Low to high speed</p> 
+            </div>
+            <div class="toggle">
+                <h3>Show Interaction</h3>
+                <div class="chkbox">
+                    <label for="smoothRadius">
+                        <input type="checkbox" id="smoothRadius" onchange="showSmoothingRadius(this)"/>
+                        <div></div>
+                    </label>
+                </div>
+                <p><span style="color: #9c0008;">&#9632;</span> Local density > target density</p>
+                <p><span style="color: #1303fc;">&#9632;</span> Local density < target density</p>
             </div>
         </div>
         <!-- Canvas element containing the simulation -->

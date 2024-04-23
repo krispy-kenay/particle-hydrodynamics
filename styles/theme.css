@@ -8,6 +8,7 @@
     --background-color: #f0f0f0;
     --primary-color: #478be7;
     --primary-color-hover: #0821ff;
+    --primary-color-translucent: #0821ff80;
 }
 
 body {

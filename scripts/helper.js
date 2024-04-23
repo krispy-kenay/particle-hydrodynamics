@@ -22,18 +22,25 @@ function setNumParticles(slider) {
 }
 // Adjust Gravity 
 function setGravity(slider) {
-    gravity = slider.value * 10;
-    setSpanPos(slider, slider.nextElementSibling, gravity / (10*200));
+    gravity = slider.value;
+    setSpanPos(slider, slider.nextElementSibling, gravity / (200));
 }
 // Adjust mass
 function setMass(slider) {
-    mass = slider.value;
+    let val;
+    if (slider.value == 0) {val = 0.05;}
+    else {val = slider.value}
+    mass = val;
     setSpanPos(slider, slider.nextElementSibling, mass / (200));
+    changeRadius(val / 10);
 }
 // Adjust Smoothing Radius
 function setSmoothingRadius(slider) {
     smoothingRadius = slider.value;
     setSpanPos(slider, slider.nextElementSibling, smoothingRadius);
+}
+function showSmoothingRadius(chkbox) {
+    displaySmoothingRadius = chkbox.checked;
 }
 // Adjust Target Density
 function setTargetDensity(slider) {
@@ -50,7 +57,10 @@ function setViscosityStrength(slider) {
     viscosityStrength = slider.value * (1/timestep**2) * mass**2;
     setSpanPos(slider, slider.nextElementSibling, viscosityStrength * (timestep**2/200)/(mass**2 ));
 }
-
+// Show Velocity as color
+function showVelocity(chkbox) {
+    displayVelocity = chkbox.checked;
+}
 
 
 // ----------------------------------------
@@ -59,6 +69,7 @@ function setViscosityStrength(slider) {
 
 // Trigger general setup once the window has loaded in properly
 window.onload = function() {
+    init_canvas();
     var inputs = document.getElementsByTagName('input');
     for (var i = 0; i < inputs.length; i++) {
         var input = inputs[i];
@@ -66,8 +77,8 @@ window.onload = function() {
             input.oninput();
         }
     }
-    init_canvas();
-    initializePositions();
+    
+    //initializePositions();
 };
 
 // Trigger canvas resize when the window is resized
