@@ -94,6 +94,7 @@ Settings
     opacity: 1;
 }
 .settings > h1 {
+    margin-top: 10px;
     font-size: 30px;
     font-weight: 800;
 }
@@ -110,7 +111,7 @@ Options
 .toggle,
 .option {
     display: grid;
-    column-gap: 10px;
+    column-gap: 5px;
     grid-template-columns: 2fr 3fr;
     width: 400px;
     align-items: center;
@@ -135,6 +136,7 @@ Options
     align-items: center;
     --thumb-height: 30px;
     --thumb-width: 12px;
+    height: 40px;
 }
 
 /*
@@ -193,7 +195,7 @@ Slider formatting
 .option > div > input:hover + span {
     opacity: 1;
     background: var(--primary-color-hover);
-    top: -36px;
+    top: -50px;
     transform: scale(1,1) translateX(-50%);
     z-index: 90;
 }
