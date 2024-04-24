@@ -8,6 +8,7 @@ var numPoints = 0;
 var smoothingRadius = 0;
 var pressureMultiplier = 0;
 var nearPressureMultiplier = 0;
+
 var viscosityStrength = 0;
 var targetDensity = 0;
 var mass = 0;
@@ -29,6 +30,13 @@ var spatialLookup = [];
 var startIndices = [];
 var collisionSpatialLookup = [];
 var collisionStartIndices = [];
+
+// Initialize state variables
+var displaySmoothingRadius = false;
+var displayVelocity = true;
+
+// Color map
+const velocityColor = ['#2736b9','#0043c3','#0056ae','#0060a5','#0067a3','#006ea4','#0075a6','#007ba9','#0082ac','#0089af','#0090b2','#0097b4','#009eb6','#00a6b7','#00aeb8','#00b6b7','#00beb5','#00c7b2','#00cead','#1cd4a9','#1cd4a9','#35da9f','#4ddf93','#64e486','#7be878','#92ec6a','#abef5b','#c4f14d','#def140','#f8f135','#f8f135','#f8e92f','#f8e129','#f8d924','#f7d11f','#f6c91b','#f5c117','#f4b914','#f2b212','#f0aa11','#eea211','#ec9a11','#ea9212','#e78b13','#e48315'];
 
 // Initialize state variables
 var displaySmoothingRadius = false;
@@ -143,6 +151,7 @@ function updatePositions(dt, g, damping) {
     if (gravity > 0) {applyGravity(acceleration, g, mass);}
     
     for (let _ = 0; _ < 3; _++) {calculateCollision(positions, positions_prev, radiuses, spatialLookup, startIndices, smoothingRadius);}
+
 
     boundBoxCheck(positions, positions_prev, canvas.width, canvas.height, damping);
     applyVelocity(positions, positions_prev, acceleration, dt);
