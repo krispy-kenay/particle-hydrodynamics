@@ -55,8 +55,8 @@ function changeNumParticles(newNum) {
             radiuses[newLength] = particleRadius;
             densities[newLength] = [0,0];
             numPoints = newNum; 
-            updatePositions(timestep, gravity, collisionDamping);
         }
+        updatePositions(timestep, gravity, collisionDamping);
     } else if (diff < 0) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (let _ = 0; _ < -diff; _++) {
@@ -71,8 +71,8 @@ function changeNumParticles(newNum) {
             let _10 = collisionSpatialLookup.pop();
             let _11 = collisionStartIndices.pop();
             numPoints = newNum;
-            updatePositions(timestep, gravity, collisionDamping);
         }
+        updatePositions(timestep, gravity, collisionDamping);
     } else {return;}
 }
 
@@ -571,10 +571,10 @@ function drawInfluence(canv, pos, dens, targetdens, sradius) {
             pos[i][0], pos[i][1], 2,
             pos[i][0], pos[i][1], smoothingRadius
         );
-        if (dens[i] <= targetdens) {
-            col = `rgba(19,3,252,${(1-(dens[i]/targetdens))})`;
-        } else if (dens[i] > targetdens) {
-            col = `rgba(156,0,8,${(1-(targetdens/dens[i]))})`;
+        if (dens[i][0] <= targetdens) {
+            col = `rgba(19,3,252,${(1-(dens[i][0]/targetdens))})`;
+        } else if (dens[i][0] > targetdens) {
+            col = `rgba(156,0,8,${(1-(targetdens/dens[i][0]))})`;
         } else {
             col = `rgba(255,255,255,0)`;
         }
