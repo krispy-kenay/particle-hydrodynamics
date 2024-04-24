@@ -7,6 +7,7 @@ var gravity = 0;
 var numPoints = 0;
 var smoothingRadius = 0;
 var pressureMultiplier = 0;
+var nearPressureMultiplier = 0;
 var viscosityStrength = 0;
 var targetDensity = 0;
 var mass = 0;
@@ -24,6 +25,10 @@ var acceleration = [];
 var radiuses = [];
 var colors = [];
 var densities = [];
+var spatialLookup = [];
+var startIndices = [];
+var collisionSpatialLookup = [];
+var collisionStartIndices = [];
 
 // Initialize state variables
 var displaySmoothingRadius = false;
@@ -48,10 +53,10 @@ function changeNumParticles(newNum) {
             acceleration[newLength] = [0,0];
             colors[newLength] = "#1e1e1e";
             radiuses[newLength] = particleRadius;
-            densities[newLength] = 0;
+            densities[newLength] = [0,0];
             numPoints = newNum; 
-            updatePositions(timestep, gravity, collisionDamping);
         }
+        updatePositions(timestep, gravity, collisionDamping);
     } else if (diff < 0) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (let _ = 0; _ < -diff; _++) {
@@ -61,9 +66,13 @@ function changeNumParticles(newNum) {
             let _5 = radiuses.pop();
             let _6 = colors.pop();
             let _7 = densities.pop();
+            let _8 = spatialLookup.pop();
+            let _9 = startIndices.pop();
+            let _10 = collisionSpatialLookup.pop();
+            let _11 = collisionStartIndices.pop();
             numPoints = newNum;
-            updatePositions(timestep, gravity, collisionDamping);
         }
+        updatePositions(timestep, gravity, collisionDamping);
     } else {return;}
 }
 
@@ -122,14 +131,19 @@ function togglePlay() {
 function updatePositions(dt, g, damping) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    updateSpatialLookup(positions, collisionSpatialLookup, collisionStartIndices, particleRadius);
+    updateSpatialLookup(positions, spatialLookup, startIndices, smoothingRadius);
+
     if (leftclick == true) {mouseAttraction(mouseX, mouseY);}
     else if (rightclick == true) {mouseRepulsion(mouseX, mouseY);}
 
-    if (targetDensity > 0) {updateDensities(positions, densities, mass);}
-    if (pressureMultiplier > 0) {calculateForces(positions, positions_prev, acceleration, densities, smoothingRadius, targetDensity, pressureMultiplier);}
+    if (targetDensity > 0) {calculateDensity(positions, densities, spatialLookup, startIndices, smoothingRadius);}
+    if (pressureMultiplier > 0) {calculatePressureForce(positions, acceleration, densities, spatialLookup, startIndices, smoothingRadius);}
+    if (viscosityStrength > 0) {calculateViscosity(positions, positions_prev, acceleration, spatialLookup, startIndices, smoothingRadius, viscosityStrength, dt);}
     if (gravity > 0) {applyGravity(acceleration, g, mass);}
     
-    for (let _ = 0; _ < 2; _++) {resolveCollisions(positions, positions_prev, radiuses);}
+    for (let _ = 0; _ < 3; _++) {calculateCollision(positions, positions_prev, radiuses, spatialLookup, startIndices, smoothingRadius);}
+
 
     boundBoxCheck(positions, positions_prev, canvas.width, canvas.height, damping);
     applyVelocity(positions, positions_prev, acceleration, dt);
@@ -256,47 +270,195 @@ function resolveCollisions(pos, ppos, radii) {
         }
     }
 }
-// Update all densities
-function updateDensities(pos, dens, mass) {
+// Function to resolve collisions
+function calculateCollision(pos, ppos, radii, slookup, sindices, sradius) {
     for (let i = 0; i < pos.length; i++) {
-        let density = 0;
-        for (let j = 0; j < pos.length; j++) {
-            let dst = calculateDistance(pos[i], pos[j]);
-            density += mass * densityKernel(dst);
+        let cell = positionToCellCoord(pos[i], sradius);
+        let cellX = cell[0];
+        let cellY = cell[1];
+        for (let x = -1; x <= 1; x++) {
+            for (let y = -1; y <= 1; y++) {
+                let hash = hashCell([cellX + x, cellY + y]);
+                let key = getKeyFromHash(hash, pos.length);
+                let cellStartIndex = sindices[key];
+                for (let k = cellStartIndex; k < slookup.length; k++) {
+                    if (slookup[k].cellKey != key) {break;}
+                    if (i == k) {continue;}
+                    let j = slookup[k].index;
+                    let dx = pos[i][0] - pos[j][0];
+                    let dy = pos[i][1] - pos[j][1];
+                    let distance = Math.sqrt(dx * dx + dy * dy);
+                    let minDistance = radii[i] + radii[j];
+                    if (distance >= minDistance) {continue;}
+                    if (distance == 0) {continue;}
+                    let penetration = minDistance - distance;
+                    let nx = dx / distance;
+                    let ny = dy / distance;
+                    let separation = penetration / 2;
+                    pos[i][0] += separation * nx;
+                    pos[i][1] += separation * ny;
+                    pos[j][0] -= separation * nx;
+                    pos[j][1] -= separation * ny;
+
+                    let rvx = (pos[i][0] - ppos[i][0]) - (pos[j][0] - ppos[j][0]);
+                    let rvy = (pos[i][1] - ppos[i][1]) - (pos[j][1] - ppos[j][1]);
+                    let vel = rvx * nx + rvy * ny;
+                    if (vel > 0) {continue;}
+                    let impulse = -(1 + collisionDamping) * vel;
+                    impulse /= (1 / mass) + (1 / mass);
+
+                    let impulseX = impulse * nx;
+                    let impulseY = impulse * ny;
+                    ppos[i][0] -= impulseX / mass;
+                    ppos[i][1] -= impulseY / mass;
+                    ppos[j][0] += impulseX / mass;
+                    ppos[j][1] += impulseY / mass;
+                }
+            }
         }
-        dens[i] = density;
     }
 }
-// Calculate all remaining forces
-function calculateForces(pos, ppos, acc, dens, sradius, targetdens, pmult) {
+// Update all densities
+function calculateDensity(pos, dens, slookup, sindices, sradius) {
     for (let i = 0; i < pos.length; i++) {
-        let pressureForce = [0,0];
-        let viscosityForce = [0,0];
-        for (let j = 0; j < pos.length; j++) {
-            if (i == j) {continue;}
-            let dst = calculateDistance(pos[i], pos[j]);
-            if (dst > sradius) {continue;}
-            let slope = densityKernelDerivative(dst);
-            let influence = viscosityKernelDerivative(dst);
-            let density = dens[j];
-            let pressure = calculateSharedPressure(density, dens[i], targetdens, pmult);
-            if (density * dst !== 0) {
-                let f = (slope * mass * pressure) / (density * dst);
-                pressureForce[0] += (pos[j][0] - pos[i][0]) * f;
-                pressureForce[1] += (pos[j][1] - pos[i][1]) * f;
+        let cell = positionToCellCoord(pos[i], sradius);
+        let cellX = cell[0];
+        let cellY = cell[1];
+        let sqradius = sradius ** 2;
+        let density = 0;
+        let nearDensity = 0;
+        for (let x = -1; x <= 1; x++) {
+            for (let y = -1; y <= 1; y++) {
+                let hash = hashCell([cellX + x, cellY + y]);
+                let key = getKeyFromHash(hash, pos.length);
+                let cellStartIndex = sindices[key];
+                for (let k = cellStartIndex; k < slookup.length; k++) {
+                    if (slookup[k].cellKey != key) {break;}
+                    //if (i == k) {continue;}
+                    let particleIndex = slookup[k].index;
+                    let sqdist = sqrMagnitude([pos[particleIndex][0] - pos[i][0], pos[particleIndex][1] - pos[i][1]]);
+                    if (sqdist >= sqradius) {continue;}
+                    let dst = Math.sqrt(sqdist);
+                    density += mass * densityKernel(dst, sradius);
+                    nearDensity += mass * NearDensityKernel(dst, sradius);
+                }
             }
-            viscosityForce[0] += ((pos[j][0] - ppos[j][0]) - (pos[i][0] - ppos[i][0])) * -influence;
-            viscosityForce[1] += ((pos[j][1] - ppos[j][1]) - (pos[i][1] - ppos[i][1])) * -influence;
+
         }
-        let viscosityOutput = viscosityForce.map(element => element * viscosityStrength);
-        let pressureAcceleration;
-        if (densities[i] !== 0) {
-            pressureAcceleration = pressureForce.map(element => element / densities[i]);
+        dens[i] = [density, nearDensity];
+    }
+}
+// Calculate pressure force
+function calculatePressureForce(pos, acc, dens, slookup, sindices, sradius) {
+    for (let i = 0; i < pos.length; i++) {
+        let cell = positionToCellCoord(pos[i], sradius);
+        let cellX = cell[0];
+        let cellY = cell[1];
+        let sqradius = sradius ** 2;
+        let density = dens[i][0];
+        let nearDensity = dens[i][1];
+        let pressure = (density - targetDensity)*pressureMultiplier;
+        let nearPressure = (nearDensity)*nearPressureMultiplier;
+        let pressureForce = [0,0];
+
+        for (let x = -1; x <= 1; x++) {
+            for (let y = -1; y <= 1; y++) {
+                let hash = hashCell([cellX + x, cellY + y]);
+                let key = getKeyFromHash(hash, pos.length);
+                let cellStartIndex = sindices[key];
+                for (let k = cellStartIndex; k < slookup.length; k++) {
+                    if (slookup[k].cellKey != key) {break;}
+                    if (i == k) {continue;}
+                    let particleIndex = slookup[k].index;
+                    let sqdist = sqrMagnitude([pos[particleIndex][0] - pos[i][0], pos[particleIndex][1] - pos[i][1]]);
+                    if (sqdist >= sqradius) {continue;}
+                    
+                    let dst = Math.sqrt(sqdist);
+                    let dirToNeighbour;
+                    if (dst > 0) {
+                        dirToNeighbour = [(pos[particleIndex][0] - pos[i][0])/dst, (pos[particleIndex][1] - pos[i][1])/dst];
+                    } else {
+                        dirToNeighbour = [0,0];
+                    }
+
+                    let neighbourDensity = dens[particleIndex][0];
+                    let neighbourNearDensity = dens[particleIndex][1];
+                    let neighbourPressure = (neighbourDensity - targetDensity)*pressureMultiplier;
+                    let neighbourNearPressure = (neighbourNearDensity)*nearPressureMultiplier;
+
+                    let sharedPressure = (pressure + neighbourPressure) * 0.5;
+                    let sharedNearPressure = (nearPressure + neighbourNearPressure) * 0.5;
+
+                    let densityDeriv = densityKernelDerivative(dst, sradius);
+                    let nearDensityDeriv = nearDensityKernelDerivative(dst, sradius);
+                    if (neighbourDensity !== 0 && neighbourNearDensity !== 0) {
+                        pressureForce[0] += (dirToNeighbour[0] * densityDeriv * mass * sharedPressure / neighbourDensity);
+                        pressureForce[1] += (dirToNeighbour[1] * densityDeriv * mass * sharedPressure / neighbourDensity);
+                        pressureForce[0] += (dirToNeighbour[0] * nearDensityDeriv * mass * sharedNearPressure / neighbourNearDensity);
+                        pressureForce[1] += (dirToNeighbour[1] * nearDensityDeriv * mass * sharedNearPressure / neighbourNearDensity);
+                    }
+                }
+            }
+
+        }
+        if (density !== 0) {
+            acc[i][0] += (pressureForce[0]/density);
+            acc[i][1] += (pressureForce[1]/density);
+        }
+    }
+}
+
+// Calculate viscosity slowdown
+function calculateViscosity(pos, ppos, acc, slookup, sindices, sradius, vstrength) {
+    for (let i = 0; i < pos.length; i++) {
+        let cell = positionToCellCoord(pos[i], sradius);
+        let cellX = cell[0];
+        let cellY = cell[1];
+        let sqradius = sradius ** 2;
+        let viscosityForce = [0,0];
+        for (let x = -1; x <= 1; x++) {
+            for (let y = -1; y <= 1; y++) {
+                let hash = hashCell([cellX + x, cellY + y]);
+                let key = getKeyFromHash(hash, pos.length);
+                let cellStartIndex = sindices[key];
+                for (let k = cellStartIndex; k < slookup.length; k++) {
+                    if (slookup[k].cellKey != key) {break;}
+                    if (i == k) {continue;}
+                    let j = slookup[k].index;
+                    let sqdist = sqrMagnitude([pos[j][0] - pos[i][0], pos[j][1] - pos[i][1]]);
+                    if (sqdist >= sqradius) {continue;}
+                    let dst = Math.sqrt(sqdist);
+                    if (dst == 0) {continue;}
+                    viscosityForce[0] += ((pos[j][0] - ppos[j][0]) - (pos[i][0] - ppos[i][0])) * -viscosityKernelDerivative(dst, sradius);
+                    viscosityForce[1] += ((pos[j][1] - ppos[j][1]) - (pos[i][1] - ppos[i][1])) * -viscosityKernelDerivative(dst, sradius);
+                }
+            }
+        }
+        acc[i][0] += viscosityForce[0] * vstrength / mass;
+        acc[i][1] += viscosityForce[1] * vstrength / mass;
+    }
+}
+
+// Spatial lookup, partitions the area into a grid where cell size = sradius
+function updateSpatialLookup(pos, slookup, sindices, sradius) {
+    for (let i = 0; i < pos.length; i++) {
+        let cell = positionToCellCoord(pos[i], sradius);
+        let cellKey = getKeyFromHash(hashCell(cell), slookup.length);
+        slookup[i] =  new Entry(i, cellKey);
+        sindices[i] = Number.MAX_SAFE_INTEGER;
+    }
+    slookup.sort((a, b) => a.cellKey - b.cellKey);
+    for (let i = 0; i < pos.length; i++) {
+        let key = slookup[i].cellKey;
+        let keyPrev;
+        if (i == 0){
+            keyPrev = Number.MAX_SAFE_INTEGER;
         } else {
-            pressureAcceleration = [0,0];
+            keyPrev = slookup[i - 1].cellKey;
         }
-        acc[i][0] += (pressureAcceleration[0]+viscosityOutput[0]/mass);
-        acc[i][1] += (pressureAcceleration[1]+viscosityOutput[1]/mass);
+        if (key != keyPrev) {
+            sindices[key] = i;
+        }       
     }
 }
 
@@ -304,34 +466,63 @@ function calculateForces(pos, ppos, acc, dens, sradius, targetdens, pmult) {
 // Kernel functions
 // ----------------------------------------
 
-function smoothingKernel (dst) {
-    if (dst < smoothingRadius) {
-    let v = (Math.PI * smoothingRadius ** 4) / 6;
-    return (smoothingRadius - dst)**2 / v;
+function smoothingKernel (dst, sradius) {
+    if (dst < sradius) {
+    let v = (Math.PI * sradius ** 4) / 6;
+    return (sradius - dst)**2 / v;
     } else {return 0;}
 }
-function spikyKernel (dst) {
-    if (dst < smoothingRadius) {
-        let v = smoothingRadius - dst;
-        return v*v*6 / (Math.PI * smoothingRadius**4);
+function spikyKernel (dst, sradius) {
+    if (dst < sradius) {
+        let v = sradius - dst;
+        return v*v*6 / (Math.PI * sradius**4);
     } else {return 0;}
 }
-function smoothingKernelDerivative(dst) {
-    if (dst >= smoothingRadius) {return 0;}
-    let scale = 12 / (Math.PI * smoothingRadius ** 4);
-    return (dst - smoothingRadius) * scale;
+function spikyKernel3 (dst, sradius) {
+    if (dst < sradius) {
+        let v = sradius - dst;
+        return v*v*v*10 / (Math.PI * sradius**5);
+    } else {return 0;}
 }
-function spikyKernelDerivative (dst) {
-    if (dst < smoothingRadius) {let v = smoothingRadius - dst; return -v*12 / ((smoothingRadius ** 4) * Math.PI);} else {return 0;}}
 
-function densityKernel(dst) {
-    return spikyKernel(dst);
+function smoothingKernelDerivative(dst, sradius) {
+    if (dst < sradius) {
+        let scale = 12 / (Math.PI * sradius ** 4);
+        return (dst - sradius) * scale;
+    } else {return 0;}
 }
-function densityKernelDerivative(dst) {
-    return spikyKernelDerivative(dst);
+
+function spikyKernelDerivative (dst, sradius) {
+    if (dst < sradius) {
+        let v = sradius - dst;
+        return -v*12 / ((sradius ** 4) * Math.PI);
+    } else {return 0;}
 }
-function viscosityKernelDerivative(dst) {
-    return smoothingKernelDerivative(dst);
+
+function spikyKernel3Derivative (dst, sradius) {
+    if (dst < sradius) {
+        let v = sradius - dst;
+        return -v*v*30 / (Math.PI * sradius**5);
+    } else {return 0;}
+}
+
+// wrapper for easy selection
+function densityKernel(dst, sradius) {
+    return spikyKernel(dst, sradius);
+}
+function NearDensityKernel(dst, sradius) {
+    return spikyKernel3(dst, sradius);
+}
+
+function densityKernelDerivative(dst, sradius) {
+    return spikyKernelDerivative(dst, sradius);
+}
+function nearDensityKernelDerivative(dst, sradius) {
+    return spikyKernel3Derivative(dst, sradius)
+}
+
+function viscosityKernelDerivative(dst, sradius) {
+    return smoothingKernelDerivative(dst, sradius);
 }
 
 // ----------------------------------------
@@ -380,10 +571,10 @@ function drawInfluence(canv, pos, dens, targetdens, sradius) {
             pos[i][0], pos[i][1], 2,
             pos[i][0], pos[i][1], smoothingRadius
         );
-        if (dens[i] <= targetdens) {
-            col = `rgba(19,3,252,${(1-(dens[i]/targetdens))})`;
-        } else if (dens[i] > targetdens) {
-            col = `rgba(156,0,8,${(1-(targetdens/dens[i]))})`;
+        if (dens[i][0] <= targetdens) {
+            col = `rgba(19,3,252,${(1-(dens[i][0]/targetdens))})`;
+        } else if (dens[i][0] > targetdens) {
+            col = `rgba(156,0,8,${(1-(targetdens/dens[i][0]))})`;
         } else {
             col = `rgba(255,255,255,0)`;
         }
@@ -416,4 +607,36 @@ function calculateSharedPressure (densityA, densityB, targetdens, pmult) {
     let pressureA = (densityA - targetdens) * pmult;
     let pressureB = (densityB - targetdens) * pmult;
     return (pressureA + pressureB) / 2;
+}
+
+// storage object
+class Entry {
+    constructor(index, cellKey) {
+        this.index = index;
+        this.cellKey = cellKey;
+    }
+}
+
+// Map position to cell coordinates
+function positionToCellCoord(posi, sradius) {
+    let cellX = parseInt(posi[0]/sradius);
+    let cellY = parseInt(posi[1]/sradius);
+    return [cellX, cellY];
+}
+
+// Convert cell coordinate into a single number
+function hashCell(cell) {
+    let a = parseInt(cell[0] * 15823);
+    let b = parseInt(cell[1] * 9737333);
+    return a + b;
+}
+
+// Map hash value to length of the array
+function getKeyFromHash(hash, len) {
+    return parseInt(hash % len);
+}
+
+// Get squared magnitude
+function sqrMagnitude(vector) {
+    return vector[0] * vector[0] + vector[1] * vector[1];
 }
