@@ -239,37 +239,7 @@ function boundBoxCheck(pos, ppos, max_x, max_y, damping) {
         }
     }
 }
-// Function to resolve collisions
-function resolveCollisions(pos, ppos, radii) {
-    for (let i = 0; i < pos.length; i++) {
-        for (let j = i + 1; j < pos.length; j++) {
-            let dx = pos[i][0] - pos[j][0];
-            let dy = pos[i][1] - pos[j][1];
-            let distance = Math.sqrt(dx * dx + dy * dy);
-            let minDistance = radii[i] + radii[j];
 
-            if (distance < minDistance) {
-                // Calculate penetration depth
-                let penetration = minDistance - distance;
-                // Normalize penetration vector
-                let nx = dx / distance;
-                let ny = dy / distance;
-                // Separate particles along penetration vector
-                let separation = penetration / 2;
-                pos[i][0] += separation * nx;
-                pos[i][1] += separation * ny;
-                pos[j][0] -= separation * nx;
-                pos[j][1] -= separation * ny;
-
-                // Update previous positions
-                ppos[i][0] = pos[i][0] - (pos[i][0] - ppos[i][0]);
-                ppos[i][1] = pos[i][1] - (pos[i][1] - ppos[i][1]);
-                ppos[j][0] = pos[j][0] - (pos[j][0] - ppos[j][0]);
-                ppos[j][1] = pos[j][1] - (pos[j][1] - ppos[j][1]);
-            }
-        }
-    }
-}
 // Function to resolve collisions
 function calculateCollision(pos, ppos, radii, slookup, sindices, sradius) {
     for (let i = 0; i < pos.length; i++) {
