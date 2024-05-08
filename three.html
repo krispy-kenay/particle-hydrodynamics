@@ -1,9 +1,13 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <!-- Styles -->
+        <meta charset="utf-8">
+        <style>
+            body { margin: 0;}
+        </style>
         <link rel="stylesheet" href="styles/theme.css">
         <link rel="stylesheet" href="styles/simulation.css">
+        <!-- Styles -->
         <script type="importmap">
             {"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js","three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"}}
         </script>
@@ -15,7 +19,7 @@
             <div id="resetButton" onclick="initializePositions()">Reset</div>
             
         </div>
-        <!-- Settings panel -->
+        <!-- Canvas element containing the simulation -->
         <div class="settings">
             <h1>Settings</h1>
             <hr/>
@@ -42,7 +46,7 @@
             </div>
             <div class="option">
                 <h3>Target Density</h3>
-                <div class="slider"><input type="range" min="0" max="200" value="100" id="" oninput="setTargetDensity(this)"><span></span></div>
+                <div class="slider"><input type="range" min="0" max="200" value="10" id="" oninput="setTargetDensity(this)"><span></span></div>
                 <p>Desired density</p>
             </div>
             <div class="option">
@@ -79,14 +83,25 @@
                 <p><span style="color: #1303fc;">&#9632;</span> Local density < target density</p>
             </div>
         </div>
-        <!-- Canvas element containing the simulation -->
-        <div class="simbox">
-            <canvas id="Sim2Dbox">
-                Your browser does not support the HTML5 canvas tag.
-            </canvas>
-        </div>
         <!-- Scripts -->
-        <script type="text/javascript" src="scripts/simulation.js"></script>
-        <script type="text/javascript" src="scripts/helper.js"></script>
+        <!--<script type="module" src="/scripts/scene.js"></script>-->
+        <script type="module" src="/main.js"></script>
+        <script type="text/javascript" src="./scripts/helper.js"></script>
+        <script>
+            var running = false;
+            const box_x = 100;
+            const box_y = 100;
+            const box_z = 200;
+            var gravity = 800;
+            var targetDensity = 0;
+            var pressureMultiplier = 100000;
+            var nearPressureMultiplier = 0;
+            var particleRadius = 3;
+            var SmoothingRadius = 20;
+            const timestep = 0.01;
+            function togglePlay() {
+                running = !running;
+            }
+        </script>
     </body>
 </html>

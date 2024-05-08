@@ -49,7 +49,9 @@ function changeNumParticles(newNum) {
         for (let _ = 0; _ < diff; _++) {
             let newLength = positions.length;
             positions[newLength] = [getRandomFloat(0, canvas.width), getRandomFloat(0, canvas.height)];
-            positions_prev[newLength] = [positions[newLength][0] + getRandomFloat(-1,1), positions[newLength][1] + getRandomFloat(-1,1)];
+            //positions_prev[newLength] = [positions[newLength][0] + getRandomFloat(-0,0), positions[newLength][1] + getRandomFloat(-0,0)];
+            positions_prev[newLength] = [positions[newLength][0], positions[newLength][1]];
+            //positions_prev[newLength] = positions[newLength];
             acceleration[newLength] = [0,0];
             colors[newLength] = "#1e1e1e";
             radiuses[newLength] = particleRadius;
@@ -142,11 +144,13 @@ function updatePositions(dt, g, damping) {
     if (viscosityStrength > 0) {calculateViscosity(positions, positions_prev, acceleration, spatialLookup, startIndices, smoothingRadius, viscosityStrength, dt);}
     if (gravity > 0) {applyGravity(acceleration, g, mass);}
     
+    
     for (let _ = 0; _ < 3; _++) {calculateCollision(positions, positions_prev, radiuses, spatialLookup, startIndices, smoothingRadius);}
 
 
     boundBoxCheck(positions, positions_prev, canvas.width, canvas.height, damping);
     applyVelocity(positions, positions_prev, acceleration, dt);
+    //console.log(positions[0][1] - positions_prev[0][1])
 
     // Redraw points
     if (displaySmoothingRadius) {drawInfluence(ctx, positions, densities, targetDensity, smoothingRadius);}
@@ -207,9 +211,14 @@ function applyVelocity(pos, ppos, acc, dt) {
             let disp = pos[i][k] - ppos[i][k];
             if (disp > max_speed) {
                 disp = max_speed;
-            } 
+            }
+            
             ppos[i][k] = pos[i][k];
             pos[i][k] += disp + acc[i][k] * (dt*dt);
+            if (i == 0) {
+                console.log(disp)
+                console.log(disp + acc[i][k] * (dt*dt))
+            }
             acc[i][k] = 0;
         }
     }

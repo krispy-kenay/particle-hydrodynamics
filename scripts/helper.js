@@ -3,12 +3,12 @@
 // ----------------------------------------
 
 // Setup the canvas & context
-var canvas = document.querySelector("#Sim2Dbox");
-var ctx = canvas.getContext("2d");
-function init_canvas() {
+//var canvas = document.querySelector("#Sim2Dbox");
+//var ctx = canvas.getContext("2d");
+/*function init_canvas() {
     canvas.width = window.innerWidth ;
     canvas.height = window.innerHeight;
-}
+}*/
 
 // ----------------------------------------
 // Set global variables
@@ -18,11 +18,11 @@ function init_canvas() {
 function setNumParticles(slider) {
     newNum = slider.value;
     setSpanPos(slider, slider.nextElementSibling, newNum);
-    changeNumParticles(newNum);
+    //changeNumParticles(newNum);
 }
 // Adjust Gravity 
 function setGravity(slider) {
-    gravity = slider.value;
+    gravity = slider.value * 10;
     setSpanPos(slider, slider.nextElementSibling, gravity / (200));
 }
 // Adjust mass
@@ -32,7 +32,7 @@ function setMass(slider) {
     else {val = slider.value}
     mass = val;
     setSpanPos(slider, slider.nextElementSibling, mass / (200));
-    changeRadius(val / 10);
+    //changeRadius(val / 10);
 }
 // Adjust Smoothing Radius
 function setSmoothingRadius(slider) {
@@ -69,7 +69,7 @@ function showVelocity(chkbox) {
 
 // Trigger general setup once the window has loaded in properly
 window.onload = function() {
-    init_canvas();
+    //init_canvas();
     var inputs = document.getElementsByTagName('input');
     for (var i = 0; i < inputs.length; i++) {
         var input = inputs[i];
@@ -102,7 +102,7 @@ var mouseDist = 200;
 var mouseForce = 4000;
 
 // Mouse event listeners
-canvas.addEventListener('mousemove', e => {
+/*canvas.addEventListener('mousemove', e => {
     mouseX = e.clientX - canvas.getBoundingClientRect().left;
     mouseY = e.clientY - canvas.getBoundingClientRect().top;
 });
@@ -126,7 +126,7 @@ canvas.addEventListener('wheel', e => {
     const delta = Math.sign(e.deltaY);
     mouseDist += delta * 10;
     if (mouseDist < 0) mouseDist = 0;
-});
+});*/
 
 // Helper function to set position of the number above the sliders
 function setSpanPos(slider, span, value) {
