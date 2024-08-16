@@ -83,7 +83,21 @@
             </canvas>
         </div>
         <!-- Scripts -->
-        <script type="text/javascript" src="scripts/simulation.js"></script>
-        <script type="text/javascript" src="scripts/helper.js"></script>
+        <script type="module" src="modules/variables.js"></script>
+        <script type="module">
+            import { setNumParticles, setGravity, setMass, setSmoothingRadius, showSmoothingRadius, setTargetDensity, setPressureMultiplier, setViscosityStrength, showVelocity, togglePlay } from "./modules/variables.js"
+            window.setNumParticles = setNumParticles;
+            window.setGravity = setGravity;
+            window.setMass = setMass;
+            window.setSmoothingRadius = setSmoothingRadius;
+            window.setTargetDensity = setTargetDensity;
+            window.setPressureMultiplier = setPressureMultiplier;
+            window.setViscosityStrength = setViscosityStrength;
+            window.showVelocity = showVelocity;
+            window.togglePlay = togglePlay;
+            window.showSmoothingRadius = showSmoothingRadius;
+            
+        </script>
+        <script type="module" src="main.js"></script>
     </body>
 </html>

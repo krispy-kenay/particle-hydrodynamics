@@ -1,3 +1,5 @@
+import { densityKernel, nearDensityKernel, densityKernelDerivative, nearDensityKernelDerivative, viscosityKernelDerivative } from "./kernels.js";
+
 // ----------------------------------------
 // Defining global variables
 // ----------------------------------------
@@ -310,7 +312,7 @@ function calculateDensity(pos, dens, slookup, sindices, sradius) {
                     if (sqdist >= sqradius) {continue;}
                     let dst = Math.sqrt(sqdist);
                     density += mass * densityKernel(dst, sradius);
-                    nearDensity += mass * NearDensityKernel(dst, sradius);
+                    nearDensity += mass * nearDensityKernel(dst, sradius);
                 }
             }
 
@@ -353,6 +355,7 @@ function calculatePressureForce(pos, acc, dens, slookup, sindices, sradius) {
 
                     let neighbourDensity = dens[particleIndex][0];
                     let neighbourNearDensity = dens[particleIndex][1];
+                    
                     let neighbourPressure = (neighbourDensity - targetDensity)*pressureMultiplier;
                     let neighbourNearPressure = (neighbourNearDensity)*nearPressureMultiplier;
 
@@ -361,6 +364,7 @@ function calculatePressureForce(pos, acc, dens, slookup, sindices, sradius) {
 
                     let densityDeriv = densityKernelDerivative(dst, sradius);
                     let nearDensityDeriv = nearDensityKernelDerivative(dst, sradius);
+
                     if (neighbourDensity !== 0 && neighbourNearDensity !== 0) {
                         pressureForce[0] += (dirToNeighbour[0] * densityDeriv * mass * sharedPressure / neighbourDensity);
                         pressureForce[1] += (dirToNeighbour[1] * densityDeriv * mass * sharedPressure / neighbourDensity);
@@ -430,69 +434,6 @@ function updateSpatialLookup(pos, slookup, sindices, sradius) {
             sindices[key] = i;
         }       
     }
-}
-
-// ----------------------------------------
-// Kernel functions
-// ----------------------------------------
-
-function smoothingKernel (dst, sradius) {
-    if (dst < sradius) {
-    let v = (Math.PI * sradius ** 4) / 6;
-    return (sradius - dst)**2 / v;
-    } else {return 0;}
-}
-function spikyKernel (dst, sradius) {
-    if (dst < sradius) {
-        let v = sradius - dst;
-        return v*v*6 / (Math.PI * sradius**4);
-    } else {return 0;}
-}
-function spikyKernel3 (dst, sradius) {
-    if (dst < sradius) {
-        let v = sradius - dst;
-        return v*v*v*10 / (Math.PI * sradius**5);
-    } else {return 0;}
-}
-
-function smoothingKernelDerivative(dst, sradius) {
-    if (dst < sradius) {
-        let scale = 12 / (Math.PI * sradius ** 4);
-        return (dst - sradius) * scale;
-    } else {return 0;}
-}
-
-function spikyKernelDerivative (dst, sradius) {
-    if (dst < sradius) {
-        let v = sradius - dst;
-        return -v*12 / ((sradius ** 4) * Math.PI);
-    } else {return 0;}
-}
-
-function spikyKernel3Derivative (dst, sradius) {
-    if (dst < sradius) {
-        let v = sradius - dst;
-        return -v*v*30 / (Math.PI * sradius**5);
-    } else {return 0;}
-}
-
-// wrapper for easy selection
-function densityKernel(dst, sradius) {
-    return spikyKernel(dst, sradius);
-}
-function NearDensityKernel(dst, sradius) {
-    return spikyKernel3(dst, sradius);
-}
-
-function densityKernelDerivative(dst, sradius) {
-    return spikyKernelDerivative(dst, sradius);
-}
-function nearDensityKernelDerivative(dst, sradius) {
-    return spikyKernel3Derivative(dst, sradius)
-}
-
-function viscosityKernelDerivative(dst, sradius) {
-    return smoothingKernelDerivative(dst, sradius);
 }
 
 // ----------------------------------------
@@ -610,3 +551,5 @@ function getKeyFromHash(hash, len) {
 function sqrMagnitude(vector) {
     return vector[0] * vector[0] + vector[1] * vector[1];
 }
+
+export {changeNumParticles, changeRadius}

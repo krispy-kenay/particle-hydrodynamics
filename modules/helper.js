@@ -1,3 +1,5 @@
+import { changeNumParticles, changeRadius } from "./simulation.js";
+
 // ----------------------------------------
 // Context setup
 // ----------------------------------------
@@ -67,19 +69,7 @@ function showVelocity(chkbox) {
 // Helper functions
 // ----------------------------------------
 
-// Trigger general setup once the window has loaded in properly
-window.onload = function() {
-    init_canvas();
-    var inputs = document.getElementsByTagName('input');
-    for (var i = 0; i < inputs.length; i++) {
-        var input = inputs[i];
-        if (input.type === 'range' && input.oninput) {
-            input.oninput();
-        }
-    }
-    
-    //initializePositions();
-};
+
 
 // Trigger canvas resize when the window is resized
 window.onresize = function() {
@@ -134,3 +124,5 @@ function setSpanPos(slider, span, value) {
     span.innerHTML = parseFloat(value).toFixed(2);
     span.style.left = ((sliderPosition * 100) - (sliderPosition - 0.5)*6) + '%';
 }
+
+export {init_canvas, setNumParticles, setGravity, setMass, setSmoothingRadius, showSmoothingRadius, setTargetDensity, setPressureMultiplier, setViscosityStrength, showVelocity}
