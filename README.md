@@ -1,5 +1,8 @@
 # Particle Hydrodynamics
-This project implements a real-time fluid simulation using the Smoothed Particle Hydrodynamics (SPH) method.
+This project implements a real-time fluid simulation using the Smoothed Particle Hydrodynamics (SPH) method. 
+
+> [!Note]
+> Check it out [here](https://krispy-kenay.github.io/particle-hydrodynamics/).
 
 ## Features
 - Collision Detection & Avoidance
